@@ -1,0 +1,33 @@
+name: Auto Sync Upstream
+
+on:
+  schedule:
+    # 这里的 cron 表达式代表每 6 小时自动检测一次
+    # 如果想更频繁，可以改为 '0 */2 * * *'（每2小时）
+    - cron: '0 */6 * * *'
+  workflow_dispatch: # 允许你在页面上手动点击按钮立即触发同步
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout target repo
+        uses: actions/checkout@v4
+        with:
+          # 默认会使用特殊的 GITHUB_TOKEN，拥有写权限
+          persist-credentials: true
+
+      - name: Sync Upstream
+        uses: aormsby/Fork-Sync-With-Upstream-action@v3.4.1
+        with:
+          target_repo_token: ${{ secrets.GITHUB_TOKEN }}
+          upstream_repository: mtvpls/MoonTVPlus       # 原作者的仓库
+          upstream_branch: main                         # 原作者的分支
+          target_branch: main                           # 你自己的分支
+          test_mode: false                              # 关闭测试模式，直接同步
+
+      - name: Sync Check
+        if: failure()
+        run: |
+          echo "同步失败，通常是因为你修改了 main 分支的代码导致了冲突。"
+          exit 1
